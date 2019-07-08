@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">DoctorApp</string>
+    <string name="login">Login</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="enter_password">Enter password</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_home">Home</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_notifications">Notifications</string>
+    <string name="appointment_to_the_doctor">Запись</string>
+    <string name="chat">Чат</string>
+    <string name="exercises">Упражнения</string>
+    <string name="analyzes">Анализы</string>
+    <string name="profile">Профиль</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="family">Фамилия</string>
+    <string name="results_not_found">Результаты диагностики не обнаружены</string>
+    <string name="patients_not_found">Пациенты не обнаружены</string>
+    <string name="exercises_not_found">Упражнения не обнаружены</string>
+</resources>

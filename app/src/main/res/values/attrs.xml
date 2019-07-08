@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="Wave">
+        <attr name="startColor" format="color" />
+        <attr name="endColor" format="color" />
+        <attr name="startBlurColor" format="color" />
+        <attr name="endBlurColor" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="GradientTextView">
+        <attr name="startColorGradient" format="color" />
+        <attr name="endColorGradient" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="CircleMedicView">
+        <attr name="startGradient" format="color" />
+        <attr name="endGradient" format="color" />
+    </declare-styleable>
+
+    <declare-styleable name="WaveProfile">
+        <attr name="gradientStart" format="color" />
+        <attr name="gradientEnd" format="color" />
+    </declare-styleable>
+
+</resources>
