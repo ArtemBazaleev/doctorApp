@@ -67,6 +67,7 @@
         app:layout_constraintBottom_toTopOf="@+id/constraintLayout3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        android:layout_alignParentTop="true"
         app:layout_constraintTop_toBottomOf="@+id/constraintLayout2" />
 
     <android.support.constraint.ConstraintLayout
@@ -85,10 +86,11 @@
             android:layout_marginTop="12dp"
             android:layout_marginBottom="12dp"
             android:fontFamily="@font/sf_compact_rounded_bold"
-            android:text="Чат с терапевтом"
+            android:text="Чат с пациентом"
             android:textColor="@android:color/background_light"
             android:textSize="24sp"
             android:textStyle="bold"
+
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

@@ -14,4 +14,10 @@ public interface ChatMembersFragmentView extends MvpView {
 
     void showPatientsNotFound();
     void hidePatientsNotFound();
+
+    void createNotificationChannel();
+
+    void showNotif(String title, String contentTitle, String string);
+
+    void setUnreadMessages(String string, long aLong);
 }

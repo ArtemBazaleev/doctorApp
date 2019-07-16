@@ -10,6 +10,7 @@ public class PatientModel {
     private String description;
     private long unreadMessages = 0;
     private boolean isSelected = false;
+    private String dialogID;
 
     public boolean isSelected() {
         return isSelected;
@@ -80,5 +81,13 @@ public class PatientModel {
 
     public void setPatientID(String patientID) {
         this.patientID = patientID;
+    }
+
+    public String getDialogID() {
+        return dialogID;
+    }
+
+    public void setDialogID(String dialogID) {
+        this.dialogID = dialogID;
     }
 }

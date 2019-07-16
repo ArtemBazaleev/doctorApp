@@ -26,6 +26,10 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        initSocket();
+    }
+
+    public void initSocket(){
         try {
             IO.Options mOptions = new IO.Options();
             mOptions.path = "/socstream/";
@@ -35,6 +39,10 @@ public class App extends Application {
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void disconnect(){
+        mSocket.disconnect();
     }
 
     public Socket getmSocket(){

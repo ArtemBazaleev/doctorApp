@@ -7,6 +7,10 @@ public class BaseMessage {
     public static final int MESSAGE_TYPE_RECIVER = 1;
     public static final int MESSAGE_TYPE_RECEIVER_PHOTO = 2;
     public static final int MESSAGE_TYPE_SENDER_IMAGE = 3;
+    public static final int MESSAGE_TYPE_SENDER_VIDEO = 4;
+    public static final int MESSAGE_TYPE_RECEIVER_VIDEO = 5;
+
+
     public int messageType = 0;
     private String message;
     private String from;

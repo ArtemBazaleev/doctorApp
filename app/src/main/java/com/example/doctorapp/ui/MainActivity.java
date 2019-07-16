@@ -12,6 +12,7 @@ import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatActivity;
 import com.arellomobile.mvp.presenter.InjectPresenter;
+import com.example.doctorapp.App;
 import com.example.doctorapp.R;
 import com.example.doctorapp.presentation.presenter.MainActivityPresenter;
 import com.example.doctorapp.presentation.view.IMainActivityView;
@@ -119,5 +120,12 @@ public class MainActivity extends MvpAppCompatActivity implements IMainActivityV
 
     @Override
     public void setEntryToTheDoctorSelected() {
+    }
+
+    @Override
+    protected void onDestroy(){
+        super.onDestroy();
+        App app = (App) getApplication();
+        app.disconnect();
     }
 }

@@ -41,7 +41,7 @@ dependencies {
     //picasso
     implementation 'com.squareup.picasso:picasso:2.5.2'
     //videoPlayer
-    implementation 'com.github.halilozercan:BetterVideoPlayer:1.2.alpha1'
+
     implementation 'com.github.ybq:Android-SpinKit:1.2.0'
     implementation 'com.github.appunite:video-player-android:1.2.0'
 
@@ -55,6 +55,8 @@ dependencies {
     implementation 'com.github.piasy:ProgressPieIndicator:1.5.7'
     implementation 'com.github.piasy:GlideImageViewFactory:1.5.7'
     implementation 'de.hdodenhof:circleimageview:3.0.0'
+
+    implementation 'net.yslibrary.keyboardvisibilityevent:keyboardvisibilityevent:2.3.0'
 
     //socket IO
     implementation 'com.github.nkzawa:socket.io-client:0.6.0'
@@ -70,6 +72,11 @@ dependencies {
     //securedPreferences
 
     implementation 'online.devliving:securedpreferencestore:0.7.3'
+
+
+    //video compressor
+    implementation 'com.iceteck.silicompressorr:silicompressor:2.2.2'
+
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'

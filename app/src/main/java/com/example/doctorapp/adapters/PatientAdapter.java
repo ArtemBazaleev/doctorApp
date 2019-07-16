@@ -48,11 +48,21 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientH
 
     public void setCounterForPatient(String id, long aLong) {
         for (PatientModel i:mData) {
-            if (i.getPatientID().equals(id)){
+            if (i.getDialogID().equals(id)){
                 i.setUnreadMessages(aLong);
                 break;
             }
 
+        }
+        notifyDataSetChanged();
+    }
+
+    public void increaseUnreadMessages(String id){
+        for (PatientModel i:mData) {
+            if (i.getDialogID().equals(id)){
+                i.setUnreadMessages(i.getUnreadMessages() + 1);
+                break;
+            }
         }
         notifyDataSetChanged();
     }

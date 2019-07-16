@@ -18,6 +18,17 @@ public class Patient {
     @SerializedName("conclusion")
     @Expose
     private String conclusion;
+    @SerializedName("dialogId")
+    @Expose
+    private String dialogId;
+
+    public String getDialogId() {
+        return dialogId;
+    }
+
+    public void setDialogId(String dialogId) {
+        this.dialogId = dialogId;
+    }
 
     public String getId() {
         return id;

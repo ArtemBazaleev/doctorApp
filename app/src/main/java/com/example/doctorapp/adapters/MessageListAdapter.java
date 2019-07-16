@@ -28,6 +28,8 @@ public class MessageListAdapter extends RecyclerView.Adapter {
     private static final int VIEW_TYPE_MESSAGE_RECEIVED = 2;
     private static final int VIEW_TYPE_MESSAGE_RECEIVED_PHOTO = 3;
     private static final int VIEW_TYPE_MESSAGE_SENT_PHOTO = 4;
+    private static final int VIEW_TYPE_MESSAGE_SENT_VIDEO = 5;
+    private static final int VIEW_TYPE_MESSAGE_RECEIVED_VIDEO = 6;
 
     private Context mContext;
     private List<BaseMessage> mMessageList;
@@ -61,12 +63,18 @@ public class MessageListAdapter extends RecyclerView.Adapter {
             return VIEW_TYPE_MESSAGE_RECEIVED;
         }  else if ((mMessageList.get(position).messageType == BaseMessage.MESSAGE_TYPE_SENDER_IMAGE)){
             return VIEW_TYPE_MESSAGE_SENT_PHOTO;
-        } else {
+        }  else if ((mMessageList.get(position).messageType == BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO)){
+            return VIEW_TYPE_MESSAGE_RECEIVED_VIDEO;
+        } else if ((mMessageList.get(position).messageType == BaseMessage.MESSAGE_TYPE_SENDER_VIDEO)){
+            return VIEW_TYPE_MESSAGE_SENT_VIDEO;
+        }
+        else {
             return VIEW_TYPE_MESSAGE_RECEIVED_PHOTO;
         }
     }
 
     // Inflates the appropriate layout according to the ViewType.
+    @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view;
@@ -83,7 +91,16 @@ public class MessageListAdapter extends RecyclerView.Adapter {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_message_recived_image, parent, false);
             return new ReceivedImageMessageHolder(view);
-        } else {
+        }else if (viewType == VIEW_TYPE_MESSAGE_RECEIVED_VIDEO){
+            view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_message_recived_image, parent, false);
+            return new ReceivedImageMessageHolder(view);
+        } else if (viewType == VIEW_TYPE_MESSAGE_SENT_VIDEO){
+            view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_message_sent_image, parent, false);
+            return new SentMessageImageHolder(view);
+        }
+        else {
             view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item_message_sent_image, parent, false);
             return new SentMessageImageHolder(view);
@@ -111,6 +128,12 @@ public class MessageListAdapter extends RecyclerView.Adapter {
             case VIEW_TYPE_MESSAGE_RECEIVED_PHOTO:
                 ((ReceivedImageMessageHolder) holder).onBind(message);
                 break;
+            case VIEW_TYPE_MESSAGE_RECEIVED_VIDEO:
+                ((ReceivedImageMessageHolder) holder).onBind(message);
+                break;
+            case VIEW_TYPE_MESSAGE_SENT_VIDEO:
+                ((SentMessageImageHolder) holder).onBind(message);
+                break;
             default:
                 ((SentMessageImageHolder) holder).onBind(message);
         }
@@ -126,11 +149,12 @@ public class MessageListAdapter extends RecyclerView.Adapter {
         holder.startAnimation(animation);
     }
 
-    public void addMessages(List<BaseMessage> subList) {
-        for (BaseMessage i:subList) {
+    public void addMessages(List<BaseMessage> baseMessages) {
+        for (BaseMessage i:baseMessages) {
             mMessageList.add(0, i);
             notifyItemInserted(0);
         }
+
     }
 
     private class SentMessageHolder extends RecyclerView.ViewHolder {
@@ -179,42 +203,71 @@ public class MessageListAdapter extends RecyclerView.Adapter {
     private class ReceivedImageMessageHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
         private ImageView imageView;
         private BaseMessage message;
+        ImageView playBtn;
         ReceivedImageMessageHolder(@NonNull View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.imageReceived);
             imageView.setOnClickListener(this);
+            playBtn = itemView.findViewById(R.id.imageView4);
         }
         void onBind(BaseMessage message){
             this.message = message;
             Glide.with(mContext)
                     .load(message.getUri())
                     .into(imageView);
+            if (message.messageType == BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO)
+                playBtn.setVisibility(View.VISIBLE);
+            else playBtn.setVisibility(View.GONE);
         }
 
         @Override
         public void onClick(View v) {
-            if (mListener!=null)
+            if (mListener==null)
+                return;
+            if (message.messageType == BaseMessage.MESSAGE_TYPE_RECEIVER_PHOTO)
                 mListener.onReceivedImage(message);
+            else if (message.messageType == BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO)
+                mListener.onReceivedVideo(message);
         }
     }
 
     private class SentMessageImageHolder extends RecyclerView.ViewHolder {
 
         ImageView imageView;
-
+        ImageView playBtn;
+        private BaseMessage message;
         SentMessageImageHolder(@NonNull View view) {
             super(view);
             imageView = itemView.findViewById(R.id.imageReceived);
+            playBtn = view.findViewById(R.id.imageView4);
+            imageView.setOnClickListener(this::onClick);
+        }
+
+        private void onClick(View view) {
+            if (mListener==null)
+                return;
+            if (message.messageType == BaseMessage.MESSAGE_TYPE_SENDER_IMAGE)
+                mListener.onReceivedImage(message);
+            else if (message.messageType == BaseMessage.MESSAGE_TYPE_SENDER_VIDEO)
+                mListener.onReceivedVideo(message);
         }
 
         void onBind(BaseMessage baseMessage){
+            message = baseMessage;
             Glide.with(mContext)
                     .load(baseMessage.getUri())
+                    .error(R.drawable.bg_black_rect)
                     .into(imageView);
+            if (message.messageType == BaseMessage.MESSAGE_TYPE_SENDER_VIDEO)
+                playBtn.setVisibility(View.VISIBLE);
+            else playBtn.setVisibility(View.GONE);
         }
     }
 
     public interface IOnReceivedImageClicked{
         void onReceivedImage(BaseMessage baseMessage);
+        default void onReceivedVideo(BaseMessage baseMessage) {
+
+        }
     }
 }
