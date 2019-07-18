@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface ChatMembersFragmentView extends MvpView {
     void showToastyMessage(String message);
-    void startChatActivity(String patientID);
+    void startChatActivity(String patientID, String patientName);
     void setPatients(List<PatientModel> patients);
     void showProgress();
     void hideProgress();
@@ -20,4 +20,6 @@ public interface ChatMembersFragmentView extends MvpView {
     void showNotif(String title, String contentTitle, String string);
 
     void setUnreadMessages(String string, long aLong);
+
+    void increaseCounterForPatient(String dialogID);
 }

@@ -48,23 +48,25 @@ import java.util.Objects;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 
-import static android.support.constraint.Constraints.TAG;
 
 
 public class ChatMembersFragment extends MvpAppCompatFragment
         implements PatientAdapter.ItemInteraction, ChatMembersFragmentView {
+
     private static final String CHANNEL_ID = "DoctorApp";
     @BindView(R.id.recycler_patient) RecyclerView recyclerView;
     @BindView(R.id.image_del_btn_chat) ImageView del;
     @BindView(R.id.progressBar3) ProgressBar progressBar;
     @BindView(R.id.not_found_content_patients) ConstraintLayout patientsNotFoundContent;
     private PatientAdapter adapter;
+    private final String TAG = "ChatMemberFragment";
 
     @InjectPresenter
     ChatMemberFragmentPresenter presenter;
     private Socket mSocket;
     private App app;
     private int notificationId = 0;
+    private boolean inited = false;
 
     @ProvidePresenter
     ChatMemberFragmentPresenter providePresenter(){
@@ -83,8 +85,7 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_chat_members, container, false);
         ButterKnife.bind(this,v);
-
-
+        app = (App) Objects.requireNonNull(getActivity()).getApplication();
         del.setOnClickListener(l->{
             adapter.desableDelMode();
             adapter.deleteSelected();
@@ -121,10 +122,23 @@ public class ChatMembersFragment extends MvpAppCompatFragment
     }
 
     @Override
-    public void startChatActivity(String patientID) {
+    public void startChatActivity(String patientID, String patientName) {
+        offSocket();
         Intent i = new Intent(getContext(), ChatActivity.class);
         i.putExtra(ChatActivity.CHAT_PATIENT_ID, patientID);
+        i.putExtra(ChatActivity.PATIENT_NAME,patientName);
         Objects.requireNonNull(getActivity()).startActivity(i);
+    }
+
+    private void offSocket() {
+        mSocket.off("authOk",authOk);
+        mSocket.off("messageReceive",messageReceive);
+        mSocket.off("leavedDialog",leavedDialog);
+        mSocket.off("newMessage",newMessage);
+        mSocket.off("error-pipe",error_pipe);
+        Log.d(TAG, "offSocket: called");
+        mSocket.disconnect();
+        inited = false;
     }
 
     @Override
@@ -138,13 +152,13 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         //initSocket(); //получаем кол-во непрочитанных сообщений
     }
 
+
+
     private void initSocket() {
-        Log.d(TAG, "initSocket: called");
-        App app = (App)getActivity().getApplication();
-        app.initSocket();
         mSocket = app.getmSocket();
-        if (!mSocket.connected())
-            mSocket.connect();
+        if (mSocket.connected())
+            Toast.makeText(getContext(), "Connected!!", Toast.LENGTH_SHORT).show();
+        else mSocket.connect();
         JSONObject data = new JSONObject();
         try {
             data.put("userId", app.getmUserID());
@@ -152,10 +166,16 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        mSocket.emit("auth", data);
-        mSocket.on("newMessage", newMessage);
-        mSocket.on("error-pipe", error_pipe);
+        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectedError);
+        //mSocket.on(Socket.EVENT_CONNECT, onConnected);
         mSocket.on("authOk", authOk);
+        mSocket.on("messageReceive",messageReceive);
+        mSocket.on("leavedDialog",leavedDialog);
+        mSocket.on("newMessage",newMessage);
+        mSocket.on("error-pipe", error_pipe);
+        Log.d("", "initSocket: " + data.toString());
+        mSocket.emit("auth", data);
+        inited = true;
     }
 
     @Override
@@ -217,45 +237,43 @@ public class ChatMembersFragment extends MvpAppCompatFragment
 
         // notificationId is a unique int for each notification that you must define
         notificationManager.notify(notificationId, builder.build());
+        app.vibrate();
         notificationId++;
     }
 
     @Override
     public void setUnreadMessages(String string, long aLong) {
+        Log.d(TAG, "setUnreadMessages: called withg value"+aLong);
         adapter.setCounterForPatient(
                 string,
                 aLong
         );
     }
 
+    @Override
+    public void increaseCounterForPatient(String dialogID) {
+        adapter.increaseUnreadMessages(dialogID);
+    }
 
+    private boolean hasChatDialog = false;
     private Emitter.Listener authOk = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
-//        try {
+        try {
             JSONObject data = (JSONObject) args[0];
-            Log.d("authOk", data.toString());
-            presenter.authOK(data);
-//            for (int i = 0; i <data.getJSONArray("dialogs").length() ; i++) {
-//                if (data.getJSONArray("dialogs").getJSONObject(i).has("unreadMessages")){
-//                    adapter.setCounterForPatient(
-//                            data.getJSONArray("dialogs").getJSONObject(i).getString("id"),
-//                            data.getJSONArray("dialogs").getJSONObject(i).getLong("unreadMessages")
-//                    );
-//                }
-//                for (int j = 0; j <data.getJSONArray("dialogs").getJSONObject(i).getJSONArray("participants").length() ; j++) {
-//                    JSONObject participant = data.getJSONArray("dialogs").getJSONObject(i).getJSONArray("participants").getJSONObject(j);
-//                    String id  = participant.getString("id");
-//                    Log.d("AuthOK", "id = " + id + " unread = " + data.getJSONArray("dialogs").getJSONObject(i).getLong("unreadMessages"));
-//                    if (data.getJSONArray("dialogs").getJSONObject(i).has("unreadMessages")){
-//
-//                    }
-//                    //adapter.setCounterForPatient(id, data.getJSONArray("dialogs").getJSONObject(i).getLong("unreadMessages"));
-//                }
-//
-//            }
-//            Log.d("", data.toString());
-//        } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
+            Log.d(TAG, "AuthOk: " + data.toString());
+            JSONObject emitObj = new JSONObject();
+            if (!data.getJSONArray("dialogs").getJSONObject(0).has("id")) { // NO CHAT
+                hasChatDialog = false;
+                return;
+            }
+//            if (data.getJSONArray("dialogs").getJSONObject(0).has("unreadMessages"))
+//                Toast.makeText(this, data.getJSONArray("dialogs").getJSONObject(0).getInt("unreadMessages"), Toast.LENGTH_SHORT).show();
+            String dialogID = data.getJSONArray("dialogs").getJSONObject(0).getString("id");
+            emitObj.put("dialogId", dialogID);
+            hasChatDialog = true;
+            Log.d("", data.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     });
 
 
@@ -263,15 +281,20 @@ public class ChatMembersFragment extends MvpAppCompatFragment
     public void onStart() {
         super.onStart();
         Log.d(TAG, "onStart: called");
+        if (inited)
+            return;
+        if (app.getmToken().equals("") || app.getmUserID().equals("")){
+            Objects.requireNonNull(getActivity()).finish();
+        }
+        app.initSocket();
         initSocket();
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
-        mSocket.off("newMessage", newMessage);
-        mSocket.off("error-pipe", error_pipe);
-        mSocket.off("authOk", authOk);
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause: _______________________________________________________________");
+        offSocket();
     }
 
     private Emitter.Listener newMessage = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
@@ -289,4 +312,17 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         Log.d("error_pipe", data.toString());
     });
 
+
+    private Emitter.Listener onConnectedError = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+
+    });
+
+    private Emitter.Listener leavedDialog = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+    });
+
+    private Emitter.Listener messageReceive  = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
+        JSONObject data = (JSONObject) args[0];
+        Log.d(TAG,"messageReceive " + data.toString());
+
+    });
 }

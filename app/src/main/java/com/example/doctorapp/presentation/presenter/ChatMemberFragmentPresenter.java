@@ -82,22 +82,21 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
 
     public void onPatientClicked(PatientModel model) {
         getViewState().setUnreadMessages(model.getDialogID(), 0);
-        getViewState().startChatActivity(model.getPatientID());
+        getViewState().startChatActivity(model.getPatientID(), model.getName() + " " + model.getSecondName());
     }
 
     public void onMessageReceived(JSONObject data) {
         Log.d(TAG, "newMessage: " + data.toString());
+
         try {
-            getViewState().showNotif("Пациент", "Сообщение:", data.getJSONObject("message").getString("message"));
+//            getViewState().showNotif("Пациент", "Сообщение:", data.getJSONObject("message").getString("message"));
+            getViewState().increaseCounterForPatient(data.getString("chatId"));
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
     public void authOK(JSONObject data) {
-        if (authOK!=null && data.toString().equals(authOK.toString())) {
-            return;
-        }
         authOK = data;
         if (adapterInitialized)
             setUnreadMessages();

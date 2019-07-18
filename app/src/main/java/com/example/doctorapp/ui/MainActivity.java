@@ -7,6 +7,7 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.BottomNavigationView;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 
@@ -100,7 +101,7 @@ public class MainActivity extends MvpAppCompatActivity implements IMainActivityV
 
     @Override
     public void startChatActivity() {
-        startActivityForResult(new Intent(MainActivity.this, ChatActivity.class),RESULT_CHAT);
+        startActivity(new Intent(MainActivity.this, ChatActivity.class));
     }
 
     @Override
@@ -125,6 +126,7 @@ public class MainActivity extends MvpAppCompatActivity implements IMainActivityV
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        Log.d("MAIN ACTIVITY", "onDestroy: called! ------------------------------------");
         App app = (App) getApplication();
         app.disconnect();
     }

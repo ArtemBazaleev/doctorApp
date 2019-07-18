@@ -113,10 +113,10 @@ public class MessageListAdapter extends RecyclerView.Adapter {
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
 
         BaseMessage message = mMessageList.get(position);
-        if (position == getItemCount()-1 && holder.getItemViewType()==VIEW_TYPE_MESSAGE_RECEIVED)
-            animateLeftToRight(holder.itemView);
-        if (position == getItemCount()-1 && holder.getItemViewType()==VIEW_TYPE_MESSAGE_SENT)
-            animateRightToLeft(holder.itemView);
+//        if (position == getItemCount()-1 && holder.getItemViewType()==VIEW_TYPE_MESSAGE_RECEIVED)
+//            animateLeftToRight(holder.itemView);
+//        if (position == getItemCount()-1 && holder.getItemViewType()==VIEW_TYPE_MESSAGE_SENT)
+//            animateRightToLeft(holder.itemView);
 
         switch (holder.getItemViewType()) {
             case VIEW_TYPE_MESSAGE_SENT:

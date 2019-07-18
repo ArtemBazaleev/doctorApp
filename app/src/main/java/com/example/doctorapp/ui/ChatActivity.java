@@ -12,7 +12,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Base64;
@@ -21,7 +20,6 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatActivity;
@@ -29,6 +27,7 @@ import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.arellomobile.mvp.presenter.ProvidePresenter;
 import com.example.doctorapp.App;
 import com.example.doctorapp.Constants;
+import com.example.doctorapp.PlayerActivity;
 import com.example.doctorapp.model.BaseMessage;
 import com.example.doctorapp.R;
 import com.example.doctorapp.adapters.MessageListAdapter;
@@ -44,7 +43,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -69,10 +67,16 @@ public class ChatActivity extends MvpAppCompatActivity
 
     public static final String CHAT_ID = "ChatID";
     public static final String CHAT_PATIENT_ID = "ChatPatientID";
+    public static final String PATIENT_NAME = "patient_NAME";
     private static final int GALLERY_REQUEST_CODE = 65535;
 
-    private String chatID;
     private String patientID;
+    private String patientName;
+
+
+    private  boolean isFirstInited = false;
+
+    private String dialogID = "";
 
     @BindView(R.id.recycler_chat) RecyclerView recyclerView;
     @BindView(R.id.imageButton2) ImageButton imageButton;
@@ -83,7 +87,6 @@ public class ChatActivity extends MvpAppCompatActivity
     private LinkedList<BaseMessage> history = new LinkedList<>();
     private int historyShown = 0;
 
-    private ProgressBar progressBarDialog;
     private AlertDialog progressDialog;
 
 
@@ -94,6 +97,7 @@ public class ChatActivity extends MvpAppCompatActivity
     @InjectPresenter
     ChatActivityPresenter presenter;
     private long lastVisibleItem;
+    private boolean isInBackGround = false;
 
     @ProvidePresenter
     ChatActivityPresenter providePresenter(){
@@ -107,18 +111,19 @@ public class ChatActivity extends MvpAppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         ButterKnife.bind(this);
+
         exercise.setOnClickListener(l-> presenter.onExerciseClicked());
         results.setOnClickListener(l-> presenter.onResultsClicked());
         app = (App)getApplication();
-        initSocket();
+        app.initSocket();
+        //initSocket();
 
         if (getIntent().getExtras()!= null){
-            chatID = getIntent().getExtras().getString(CHAT_ID,"");
             patientID = getIntent().getExtras().getString(CHAT_PATIENT_ID,"");
             Log.d("CHAT ACTIVITY", "PatientID: " + patientID);
+            patientName = getIntent().getExtras().getString(PATIENT_NAME, "");
             presenter.setPatientID(patientID);
         }
-
 
         hideAll();
         LinearLayoutManager manager= new LinearLayoutManager(this);
@@ -205,13 +210,12 @@ public class ChatActivity extends MvpAppCompatActivity
                 });
     }
 
-    private void initSocket(){
-
+    private void initSocket() {
+        Log.d("ChatActivity", "initSocket: Called!");
         mSocket = app.getmSocket();
         if (mSocket.connected())
             Toast.makeText(this, "Connected!!", Toast.LENGTH_SHORT).show();
         else mSocket.connect();
-
         JSONObject data = new JSONObject();
         try {
             data.put("userId", app.getmUserID());
@@ -219,53 +223,49 @@ public class ChatActivity extends MvpAppCompatActivity
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        //mSocket.on(Socket.EVENT_CONNECT, onConnected);
-        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectedError);
-        mSocket.on(Socket.EVENT_CONNECT, onConnected);
-        //mSocket.emit("auth", data);
-        mSocket.on("authOk", authOk);
-        mSocket.on("enteredDialog",enteredDialog);
-        mSocket.on("messageReceive",messageReceive);
-        mSocket.on("leavedDialog",leavedDialog);
-        mSocket.on("newMessage", newMessage);
-        mSocket.on("messageListReceive", messageListReceive);
-        mSocket.on("error-pipe", error_pipe);
+        mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectedErrorChat);
+        mSocket.on(Socket.EVENT_CONNECT, onConnectedChat);
+        mSocket.on("authOk", authOkChat);
+        mSocket.on("enteredDialog",enteredDialogChat);
+        mSocket.on("messageReceive",messageReceiveChat);
+        mSocket.on("leavedDialog",leavedDialogChat);
+        mSocket.on("newMessage",newMessageChat);
+        mSocket.on("messageListReceive", messageListReceiveChat);
+        mSocket.on("error-pipe", error_pipeChat);
         Log.d("", "initSocket: " + data.toString());
         mSocket.emit("auth", data);
     }
 
     public void onActivityResult(int requestCode,int resultCode,Intent data){
         if (resultCode == Activity.RESULT_OK)
-            switch (requestCode){
-                case GALLERY_REQUEST_CODE:
-                    String[]arrTemp = ImageFilePath.getPath(this, data.getData()).split("\\.");
-                    if (arrTemp[arrTemp.length-1].equals("mp4")) {
-                        compressVideo(data);
-                        return;
-                    }
-                    Uri selectedImage = data.getData();
-                    BaseMessage baseMessage = new BaseMessage();
-                    baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_IMAGE;
-                    baseMessage.setUri(selectedImage);
-                    String base64Photo = fileToBase64(data);
-                    String strMessage = "data:image/" + arrTemp[arrTemp.length-1] + ";base64," + base64Photo;
-                    adapter.addMessage(baseMessage);
-                    JSONObject message = new JSONObject();
-                    try{
-                        message.put("message", strMessage);
-                        message.put("type", "photo");
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-                    Log.d("ChatActivity", "sending string..." + message.toString());
-                    mSocket.emit("message", message);
-                    recyclerView.scrollToPosition(adapter.getItemCount()-1);
-                    lastVisibleItem = adapter.getItemCount()-1;
+            if (requestCode == GALLERY_REQUEST_CODE) {
+                String[] arrTemp = ImageFilePath.getPath(this, data.getData()).split("\\.");
+                if (arrTemp[arrTemp.length - 1].equals("mp4")) {
+                    compressVideo(data);
+                    return;
+                }
+                Uri selectedImage = data.getData();
+                BaseMessage baseMessage = new BaseMessage();
+                baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_IMAGE;
+                baseMessage.setUri(selectedImage);
+                String base64Photo = fileToBase64(data);
+                String strMessage = "data:image/" + arrTemp[arrTemp.length - 1] + ";base64," + base64Photo;
+                adapter.addMessage(baseMessage);
+                JSONObject message = new JSONObject();
+                try {
+                    message.put("message", strMessage);
+                    message.put("type", "photo");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                Log.d("ChatActivity", "sending string..." + message.toString());
+                mSocket.emit("message", message);
+                recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+                lastVisibleItem = adapter.getItemCount() - 1;
             }
     }
 
     private void compressVideo(Intent data) {
-        String filePath = "";
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         //use one of overloaded setDataSource() functions to set your data source
         retriever.setDataSource(this, data.getData());
@@ -318,7 +318,6 @@ public class ChatActivity extends MvpAppCompatActivity
     private void showProgressDialog() {
         android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
         View v = getLayoutInflater().inflate(R.layout.progress_dialog,null);
-        progressBarDialog = v.findViewById(R.id.progressBar7);
         builder.setView(v);
         builder.setCancelable(false);
         progressDialog = builder.create();
@@ -350,14 +349,6 @@ public class ChatActivity extends MvpAppCompatActivity
             return null;
         }
     }
-
-    @Override
-    public void onBackPressed() {
-        super.onBackPressed();
-        setResult(RESULT_OK);
-        finish();
-    }
-
     //MVP
     @Override
     public void hideAll() {
@@ -392,76 +383,127 @@ public class ChatActivity extends MvpAppCompatActivity
 
 
     //MVP
+
     @Override
-    protected void onDestroy() {
+    protected void onPause() {
+        super.onPause();
+        Log.d("ChatActivity", "onPause: Called-------------------------------------------------------");
+        mSocket.emit("exitFromChat", new JSONObject());
+        mSocket.off("authOk", authOkChat);
+        mSocket.off("enteredDialog",enteredDialogChat);
+        mSocket.off("messageReceive",messageReceiveChat);
+        mSocket.off("leavedDialog",leavedDialogChat);
+        //mSocket.off("newMessage",newMessageChat);
+        mSocket.off("messageListReceive", messageListReceiveChat);
+        mSocket.off("error-pipe", error_pipeChat);
+        isInBackGround = true;
+        if (progressDialog!=null)
+            progressDialog.dismiss();
+    }
+    protected void onDestroy(){
         super.onDestroy();
-        //mSocket.disconnect();
-        mSocket.off("authOk", authOk);
-        mSocket.off("enteredDialog",enteredDialog);
-        mSocket.off("messageReceive",messageReceive);
-        mSocket.off("leavedDialog",leavedDialog);
-        mSocket.off("newMessage",newMessage);
-        mSocket.off("messageListReceive", messageListReceive);
-        mSocket.off("error-pipe", error_pipe);
+        mSocket.off("newMessage",newMessageChat);
     }
 
-    private Emitter.Listener error_pipe  = args -> ChatActivity.this.runOnUiThread(() -> {
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d("ChatActivity", "onStart: ___________________________________________");
+        initSocket();
+        isInBackGround = false;
+    }
+
+    private Emitter.Listener error_pipeChat  = args -> ChatActivity.this.runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
         Log.d("error_pipe", data.toString());
-        try {
-            Toast.makeText(this, data.getString("message"), Toast.LENGTH_SHORT).show();
-        } catch (JSONException e) {
+    });
+
+    private Emitter.Listener messageListReceiveChat = args -> ChatActivity.this.runOnUiThread(() -> {
+        JSONObject data = (JSONObject) args[0];
+        Log.d("", data.toString());
+    });
+
+    private String chatID = "";
+    private Emitter.Listener newMessageChat = args -> ChatActivity.this.runOnUiThread(() -> {
+        JSONObject data = (JSONObject) args[0];
+        Log.d("ChatActivity", "newMessage: " + data.toString());
+        try{
+            if (isInBackGround){
+                if (data.getString("chatId").equals(chatID)){
+                    BaseMessage baseMessage = new BaseMessage();
+                    switch (data.getJSONObject("message").getString("type")){
+                        case "text":
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
+                            baseMessage.setMessage(data.getJSONObject("message").getString("message"));
+                            baseMessage.setTime(data.getJSONObject("message").getLong("date"));
+
+                            break;
+                        case "photo":
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_PHOTO;
+                            baseMessage.setUri(Uri.parse(Constants.BASE_URL_IMAGE + data.getJSONObject("message").getString("message")));
+                            baseMessage.setTime(data.getJSONObject("message").getLong("date"));
+                            break;
+                        case "video":
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
+                            baseMessage.setMessage(Constants.BASEURL_VIDEO_TEMP + data.getJSONObject("message").getString("message"));
+                            baseMessage.setTime(data.getJSONObject("message").getLong("date"));
+                            break;
+                    }
+                    adapter.addMessage(baseMessage);
+                }
+
+            }
+
+        }catch (JSONException e){
             e.printStackTrace();
         }
     });
 
-    private Emitter.Listener messageListReceive = args -> ChatActivity.this.runOnUiThread(() -> {
-        JSONObject data = (JSONObject) args[0];
-        Log.d("messageListReceive", data.toString());
-    });
+    private Emitter.Listener leavedDialogChat = args -> ChatActivity.this.runOnUiThread(() -> Log.d("leavedDialog", ""));
 
-    private Emitter.Listener newMessage = args -> ChatActivity.this.runOnUiThread(() -> {
-        JSONObject data = (JSONObject) args[0];
-        Log.d("ChatActivity", "newMessage: " + data.toString());
-    });
-
-    private Emitter.Listener leavedDialog = args -> ChatActivity.this.runOnUiThread(() -> {
-        JSONObject data = (JSONObject) args[0];
-        Log.d("leavedDialog", data.toString());
-    });
-
-    private Emitter.Listener messageReceive  = args -> ChatActivity.this.runOnUiThread(() -> {
+    private Emitter.Listener messageReceiveChat  = args -> ChatActivity.this.runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
         Log.d("messageReceive", data.toString());
         try {
             BaseMessage baseMessage = new BaseMessage();
-            if (data.getJSONObject("message").getString("type").equals("text")){
-                baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
-                baseMessage.setMessage(data.getJSONObject("message").getString("message"));
+            baseMessage.setTime(data.getJSONObject("message").getLong("date"));
+            switch (data.getJSONObject("message").getString("type")) {
+                case "text":
+                    baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
+                    baseMessage.setMessage(data.getJSONObject("message").getString("message"));
+                    break;
+                case "photo":
+                    baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_PHOTO;
+                    baseMessage.setUri(Uri.parse(Constants.BASE_URL_IMAGE + data.getJSONObject("message").getString("message")));
+                    break;
+                case "video":
+                    baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
+                    baseMessage.setMessage(Constants.BASEURL_VIDEO_TEMP + data.getJSONObject("message").getString("message"));
+                    break;
             }
-            else if (data.getJSONObject("message").getString("type").equals("photo")){
-                baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_PHOTO;
-                baseMessage.setUri(Uri.parse(Constants.BASE_URL_IMAGE + data.getJSONObject("message").getString("message")));
-            }
-            //baseMessage.setTime(data.getJSONObject("message").getLong("date"));
             String author = data.getJSONObject("message").getString("author");
             Log.d( "MessageAuthor" , author);
             if (app.getmUserID().equals(author))
                 return;
             adapter.addMessage(baseMessage);
             recyclerView.scrollToPosition(adapter.getItemCount()-1);
+            lastVisibleItem = adapter.getItemCount()-1;
         } catch (JSONException e) {
             e.printStackTrace();
         }
     });
 
-
-    private Emitter.Listener enteredDialog = args -> ChatActivity.this.runOnUiThread(() -> {
+    private Emitter.Listener enteredDialogChat = args -> ChatActivity.this.runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
-        Log.d("enteredDialog", data.toString());
+        Log.d("ChatActivity","enteredDialog "+ data.toString());
+        if (isFirstInited)
+            return;
         try{
             for (int i = 0; i<data.getJSONArray("messages").length(); i++) {
                 BaseMessage baseMessage = new BaseMessage();
+                baseMessage.setTime(data.getJSONArray("messages").getJSONObject(i).getLong("date"));
                 if (!data.getJSONArray("messages").getJSONObject(i).has("type")) { // if type !exist it might be old message
                     baseMessage.setMessage(data.getJSONArray("messages").getJSONObject(i).getString("message"));
                     if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author")))
@@ -471,30 +513,30 @@ public class ChatActivity extends MvpAppCompatActivity
                     continue;
                 }
 
-                Log.d("ChatActivity", data.getJSONArray("messages").getJSONObject(i).getString("type"));
+                //Log.d("ChatActivity", data.getJSONArray("messages").getJSONObject(i).getString("type"));
 
-                if (data.getJSONArray("messages").getJSONObject(i).getString("type").equals("text")){ //если текст
-                    baseMessage.setMessage(data.getJSONArray("messages").getJSONObject(i).getString("message"));
-                    if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author")))
-                        baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER;
-                    else baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
-                }
-                else if(data.getJSONArray("messages").getJSONObject(i).getString("type").equals("photo")){ // если фото
-                    baseMessage.setUri(Uri.parse(Constants.BASE_URL_IMAGE + data.getJSONArray("messages").getJSONObject(i).getString("message")));
-                    if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author")))
-                        baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_IMAGE;
-                    else baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_PHOTO;
-                }
-                else if (data.getJSONArray("messages").getJSONObject(i).getString("type").equals("video"))
-                {
-                    baseMessage.setUri(Uri.parse(Constants.BASEURL_VIDEO_TEMP + data.getJSONArray("messages").getJSONObject(i).getString("message")));
-                    baseMessage.setMessage(Constants.BASEURL_VIDEO_TEMP + data.getJSONArray("messages").getJSONObject(i).getString("message"));
-                    if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author"))) {
-                        baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_VIDEO;
-                    }
-                    else {
-                        baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO;
-                    }
+                switch (data.getJSONArray("messages").getJSONObject(i).getString("type")) {
+                    case "text":  //если текст
+                        baseMessage.setMessage(data.getJSONArray("messages").getJSONObject(i).getString("message"));
+                        if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author")))
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER;
+                        else baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
+                        break;
+                    case "photo":  // если фото
+                        baseMessage.setUri(Uri.parse(Constants.BASE_URL_IMAGE + data.getJSONArray("messages").getJSONObject(i).getString("message")));
+                        if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author")))
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_IMAGE;
+                        else baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_PHOTO;
+                        break;
+                    case "video":
+                        baseMessage.setUri(Uri.parse(Constants.BASEURL_VIDEO_TEMP + data.getJSONArray("messages").getJSONObject(i).getString("message")));
+                        baseMessage.setMessage(Constants.BASEURL_VIDEO_TEMP + data.getJSONArray("messages").getJSONObject(i).getString("message"));
+                        if (app.getmUserID().equals(data.getJSONArray("messages").getJSONObject(i).getString("author"))) {
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_VIDEO;
+                        } else {
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO;
+                        }
+                        break;
                 }
 
                 history.add(baseMessage);
@@ -513,9 +555,10 @@ public class ChatActivity extends MvpAppCompatActivity
         }
         recyclerView.scrollToPosition(adapter.getItemCount()-1);
         lastVisibleItem = adapter.getItemCount()-1;
+        isFirstInited = true;
     });
 
-    private Emitter.Listener authOk = args -> ChatActivity.this.runOnUiThread(() -> {
+    private Emitter.Listener authOkChat = args -> ChatActivity.this.runOnUiThread(() -> {
         try {
             JSONObject data = (JSONObject) args[0];
             Log.d("authOk", data.toString());
@@ -523,7 +566,6 @@ public class ChatActivity extends MvpAppCompatActivity
                 for (int j = 0; j <data.getJSONArray("dialogs").getJSONObject(i).getJSONArray("participants").length() ; j++) {
                     JSONObject participant = data.getJSONArray("dialogs").getJSONObject(i).getJSONArray("participants").getJSONObject(j);
                     String id  = participant.getString("id");
-                    //Log.d("", id);
                     if (id.equals(patientID)){
                         JSONObject emitObj = new JSONObject();
                         emitObj.put("dialogId",data.getJSONArray("dialogs").getJSONObject(i).getString("id"));
@@ -532,7 +574,6 @@ public class ChatActivity extends MvpAppCompatActivity
                         break;
                     }
                 }
-
             }
             Log.d("", data.toString());
         } catch (JSONException e) {
@@ -540,21 +581,14 @@ public class ChatActivity extends MvpAppCompatActivity
         }
     });
 
-    private Emitter.Listener onConnected = args -> ChatActivity.this.runOnUiThread(() -> {
-        //JSONObject data = (JSONObject) args[0];
-        Toast.makeText(this, "Success", Toast.LENGTH_SHORT).show();
+    private Emitter.Listener onConnectedChat = args -> ChatActivity.this.runOnUiThread(() -> {
+        
+    });
+
+    private Emitter.Listener onConnectedErrorChat = args -> ChatActivity.this.runOnUiThread(() -> {
 
     });
 
-    private Emitter.Listener onConnectedError = args -> ChatActivity.this.runOnUiThread(() -> {
-        JSONObject data = (JSONObject) args[0];
-        Toast.makeText(this, "Error", Toast.LENGTH_SHORT).show();
-
-    });
-
-    public void requestMoreMessages(int count){
-
-    }
 
 
     @Override
@@ -564,9 +598,15 @@ public class ChatActivity extends MvpAppCompatActivity
         startActivity(i);
     }
 
+    @Override
+    public void onReceivedVideo(BaseMessage baseMessage) {
+        Log.d("ChatActivity", "onReceivedVideo: Called");
+        Intent i = PlayerActivity.getVideoPlayerIntent(this,
+                baseMessage.getUri().toString(),"", R.drawable.ic_video_play);
+        startActivity(i);
+    }
+
     private boolean checkPermission(){
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-            return false;
-        else return true;
+        return ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 }

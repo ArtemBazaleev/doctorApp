@@ -2,28 +2,44 @@ package com.example.doctorapp.ui;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Environment;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.doctorapp.R;
 import com.github.piasy.biv.BigImageViewer;
+import com.github.piasy.biv.indicator.ProgressIndicator;
 import com.github.piasy.biv.indicator.progresspie.ProgressPieIndicator;
+import com.github.piasy.biv.loader.ImageLoader;
+import com.github.piasy.biv.loader.fresco.FrescoImageLoader;
 import com.github.piasy.biv.loader.glide.GlideImageLoader;
 import com.github.piasy.biv.view.BigImageView;
 import com.github.piasy.biv.view.GlideImageViewFactory;
 import com.github.piasy.biv.view.ImageSaveCallback;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import static com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.ORIENTATION_USE_EXIF;
 
 /**
  * An example full-screen activity that shows and hides the system UI (i.e.
@@ -35,7 +51,6 @@ public class ResultViewActivity extends AppCompatActivity {
      * {@link #AUTO_HIDE_DELAY_MILLIS} milliseconds.
      */
     private static final boolean AUTO_HIDE = true;
-
     /**
      * If {@link #AUTO_HIDE} is set, the number of milliseconds to wait after
      * user interaction before hiding the system UI.
@@ -79,7 +94,12 @@ public class ResultViewActivity extends AppCompatActivity {
         }
     };
     private boolean mVisible;
-    private final Runnable mHideRunnable = () -> hide();
+    private final Runnable mHideRunnable = new Runnable() {
+        @Override
+        public void run() {
+            hide();
+        }
+    };
 
     /**
      * Touch listener to use for in-layout UI controls to delay hiding the
@@ -95,8 +115,47 @@ public class ResultViewActivity extends AppCompatActivity {
 
     @BindView(R.id.bigImage) BigImageView bigImageView;
     @BindView(R.id.save) Button saveBtn;
+    @BindView(R.id.share_btn) Button shareBtn;
+    @BindView(R.id.rotateBtn) Button rotateBtn;
+    @BindView(R.id.fullscreen_content) ConstraintLayout constraintContent;
+    private float rotation = 0;
     private String photoUrl;
     public static final String IMAGE_PARAM = "IMAGE_PARAMS";
+
+    private ImageSaveCallback callbackSave = new ImageSaveCallback() {
+        @Override
+        public void onSuccess(String uri) {
+            Toast.makeText(ResultViewActivity.this,
+                    "Добавлено в галерею",
+                    Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        public void onFail(Throwable t) {
+            t.printStackTrace();
+            Toast.makeText(ResultViewActivity.this,
+                    "Fail",
+                    Toast.LENGTH_SHORT).show();
+        }
+    };
+
+    private ImageSaveCallback callbackShare = new ImageSaveCallback() {
+        @Override
+        public void onSuccess(String uri) {
+            Intent share = new Intent(Intent.ACTION_SEND);
+            share.setType("image/jpeg");
+            share.putExtra(Intent.EXTRA_STREAM, Uri.parse(uri));
+            startActivity(Intent.createChooser(share, "Share Image"));
+        }
+
+        @Override
+        public void onFail(Throwable t) {
+            t.printStackTrace();
+            Toast.makeText(ResultViewActivity.this,
+                    "Fail",
+                    Toast.LENGTH_SHORT).show();
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,28 +182,59 @@ public class ResultViewActivity extends AppCompatActivity {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
                 return;
             }
-            bigImageView.saveImageIntoGallery();
-        });
-        bigImageView.setImageViewFactory(new GlideImageViewFactory());
-        bigImageView.setImageSaveCallback(new ImageSaveCallback() {
-            @Override
-            public void onSuccess(String uri) {
-                Toast.makeText(ResultViewActivity.this,
-                        "Success",
-                        Toast.LENGTH_SHORT).show();
+            try {
+                bigImageView.saveImageIntoGallery();
+            }catch (Exception e){
+                e.printStackTrace();
+                Toast.makeText(this, "Ошибка сохранения фотографии", Toast.LENGTH_SHORT).show();
             }
+        });
 
-            @Override
-            public void onFail(Throwable t) {
-                t.printStackTrace();
-                Toast.makeText(ResultViewActivity.this,
-                        "Fail",
-                        Toast.LENGTH_SHORT).show();
+        shareBtn.setOnClickListener(l->{
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                return;
+            }
+            try {
+                bigImageView.setImageSaveCallback(callbackShare);
+                bigImageView.saveImageIntoGallery();
+                bigImageView.setImageSaveCallback(callbackSave);
+            }catch (Exception e){
+                e.printStackTrace();
+                Toast.makeText(this, "Ошибка ", Toast.LENGTH_SHORT).show();
             }
         });
+
+        bigImageView.setImageViewFactory(new GlideImageViewFactory());
+        bigImageView.setImageSaveCallback(callbackSave);
+
         Button b = findViewById(R.id.dummy_button);
         b.setOnClickListener(l-> finish());
 
+
+
+        rotateBtn.setOnClickListener(l-> { //changing orientation
+            int w = constraintContent.getWidth();
+            int h = constraintContent.getHeight();
+            constraintContent.setRotation(rotation+=90);
+            ViewGroup.LayoutParams lp = constraintContent.getLayoutParams();
+            lp.height = w;
+            lp.width = h;
+            constraintContent.requestLayout();
+        });
+
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        int w = constraintContent.getWidth();
+        int h = constraintContent.getHeight();
+        //constraintContent.setRotation(rotation+=90);
+        ViewGroup.LayoutParams lp = constraintContent.getLayoutParams();
+        lp.height = w;
+        lp.width = h;
+        constraintContent.requestLayout();
     }
 
     @Override
@@ -167,7 +257,6 @@ public class ResultViewActivity extends AppCompatActivity {
 
     private void hide() {
         // Hide UI first
-        Log.d("hide: ", "called !!");
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
