@@ -19,4 +19,5 @@
     <string name="results_not_found">Результаты диагностики не обнаружены</string>
     <string name="patients_not_found">Пациенты не обнаружены</string>
     <string name="exercises_not_found">Упражнения не обнаружены</string>
+    <string name="preview">Preview</string>
 </resources>

@@ -254,10 +254,15 @@ public class MessageListAdapter extends RecyclerView.Adapter {
 
         void onBind(BaseMessage baseMessage){
             message = baseMessage;
-            Glide.with(mContext)
-                    .load(baseMessage.getUri())
-                    .error(R.drawable.bg_black_rect)
-                    .into(imageView);
+
+
+            if (message.getResourceLocalPreview() == -1)
+                Glide.with(mContext)
+                        .load(baseMessage.getUri())
+                        .error(R.drawable.bg_black_rect)
+                        .into(imageView);
+
+
             if (message.messageType == BaseMessage.MESSAGE_TYPE_SENDER_VIDEO)
                 playBtn.setVisibility(View.VISIBLE);
             else playBtn.setVisibility(View.GONE);

@@ -10,6 +10,7 @@ public class BaseMessage {
     public static final int MESSAGE_TYPE_SENDER_VIDEO = 4;
     public static final int MESSAGE_TYPE_RECEIVER_VIDEO = 5;
 
+    private int resourceLocalPreview = -1;
 
     public int messageType = 0;
     private String message;
@@ -25,7 +26,13 @@ public class BaseMessage {
 
     private Long time;
 
+    public int getResourceLocalPreview() {
+        return resourceLocalPreview;
+    }
 
+    public void setResourceLocalPreview(int resourceLocalPreview) {
+        this.resourceLocalPreview = resourceLocalPreview;
+    }
 
     public String getFrom() {
         return from;

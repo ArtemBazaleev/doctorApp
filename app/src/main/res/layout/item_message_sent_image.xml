@@ -2,7 +2,6 @@
 <android.support.constraint.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -19,6 +18,8 @@
         app:cardElevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:cardBackgroundColor="#000"
+
         app:layout_constraintTop_toTopOf="parent">
         <android.support.constraint.ConstraintLayout
             android:layout_width="wrap_content"
@@ -31,13 +32,15 @@
                 android:adjustViewBounds="true"
                 android:maxWidth="300dp"
                 android:maxHeight="400dp"
+
                 android:minWidth="170dp"
                 android:minHeight="200dp"
                 android:scaleType="centerCrop"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                android:contentDescription="@string/preview" />
             <ImageView
                 android:id="@+id/imageView4"
                 android:layout_width="42dp"
@@ -47,7 +50,8 @@
                 app:layout_constraintEnd_toEndOf="@+id/imageReceived"
                 app:layout_constraintStart_toStartOf="@+id/imageReceived"
                 app:layout_constraintTop_toTopOf="@+id/imageReceived"
-                app:srcCompat="@drawable/ic_play_arrow_black_24dp" />
+                app:srcCompat="@drawable/ic_play_arrow_black_24dp"
+                android:contentDescription="@string/preview" />
 
         </android.support.constraint.ConstraintLayout>
 
@@ -60,7 +64,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
-        android:text="11:40"
         android:textSize="10sp"
         app:layout_constraintBottom_toBottomOf="@+id/cardView2"
         app:layout_constraintEnd_toStartOf="@+id/cardView2" />

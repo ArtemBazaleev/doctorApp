@@ -2,7 +2,6 @@
 <android.support.constraint.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -12,6 +11,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
+        app:cardBackgroundColor="#000"
         android:layout_marginBottom="8dp"
         app:cardElevation="4dp"
         app:cardCornerRadius="6dp"
@@ -35,7 +35,8 @@
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                android:contentDescription="@string/preview" />
             <ImageView
                 android:id="@+id/imageView4"
                 android:layout_width="42dp"
@@ -45,7 +46,8 @@
                 app:layout_constraintEnd_toEndOf="@+id/imageReceived"
                 app:layout_constraintStart_toStartOf="@+id/imageReceived"
                 app:layout_constraintTop_toTopOf="@+id/imageReceived"
-                app:srcCompat="@drawable/ic_play_arrow_black_24dp" />
+                app:srcCompat="@drawable/ic_play_arrow_black_24dp"
+                android:contentDescription="@string/preview" />
 
         </android.support.constraint.ConstraintLayout>
 
@@ -56,7 +58,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
-        android:text="11:40"
         android:textSize="10sp"
         app:layout_constraintBottom_toBottomOf="@+id/cardView2"
         app:layout_constraintStart_toEndOf="@+id/cardView2" />

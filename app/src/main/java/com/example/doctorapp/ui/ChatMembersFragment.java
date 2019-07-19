@@ -221,7 +221,7 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, intent, 0);
         Uri alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getContext(), CHANNEL_ID)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(Objects.requireNonNull(getContext()), CHANNEL_ID)
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setContentTitle(title)
                 .setContentText(contentTitle)
@@ -252,6 +252,7 @@ public class ChatMembersFragment extends MvpAppCompatFragment
 
     @Override
     public void increaseCounterForPatient(String dialogID) {
+        app.vibrate();
         adapter.increaseUnreadMessages(dialogID);
     }
 
@@ -260,15 +261,22 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         try {
             JSONObject data = (JSONObject) args[0];
             Log.d(TAG, "AuthOk: " + data.toString());
-            JSONObject emitObj = new JSONObject();
+
             if (!data.getJSONArray("dialogs").getJSONObject(0).has("id")) { // NO CHAT
                 hasChatDialog = false;
                 return;
             }
-//            if (data.getJSONArray("dialogs").getJSONObject(0).has("unreadMessages"))
-//                Toast.makeText(this, data.getJSONArray("dialogs").getJSONObject(0).getInt("unreadMessages"), Toast.LENGTH_SHORT).show();
-            String dialogID = data.getJSONArray("dialogs").getJSONObject(0).getString("id");
-            emitObj.put("dialogId", dialogID);
+            for (int i = 0; i < data.getJSONArray("dialogs").length(); i++){
+                String dialogID = data.getJSONArray("dialogs").getJSONObject(i).getString("id");
+                if (data.getJSONArray("dialogs").getJSONObject(i).has("unreadMessages")){
+                    int unreadMessages = data.getJSONArray("dialogs").getJSONObject(i).getInt("unreadMessages");
+                    presenter.updateUnreadMessages(dialogID,unreadMessages);
+                }
+                else {
+                    presenter.updateUnreadMessages(dialogID, 0);
+                }
+            }
+
             hasChatDialog = true;
             Log.d("", data.toString());
         } catch (JSONException e) {
@@ -311,7 +319,6 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         JSONObject data = (JSONObject) args[0];
         Log.d("error_pipe", data.toString());
     });
-
 
     private Emitter.Listener onConnectedError = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
 

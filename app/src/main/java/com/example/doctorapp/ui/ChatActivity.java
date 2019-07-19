@@ -75,6 +75,7 @@ public class ChatActivity extends MvpAppCompatActivity
 
 
     private  boolean isFirstInited = false;
+    private LinkedList<JSONObject> imagesToSend;
 
     private String dialogID = "";
 
@@ -111,6 +112,7 @@ public class ChatActivity extends MvpAppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_chat);
         ButterKnife.bind(this);
+        imagesToSend = new LinkedList<>();
 
         exercise.setOnClickListener(l-> presenter.onExerciseClicked());
         results.setOnClickListener(l-> presenter.onResultsClicked());
@@ -229,7 +231,8 @@ public class ChatActivity extends MvpAppCompatActivity
         mSocket.on("enteredDialog",enteredDialogChat);
         mSocket.on("messageReceive",messageReceiveChat);
         mSocket.on("leavedDialog",leavedDialogChat);
-        mSocket.on("newMessage",newMessageChat);
+        if (!mSocket.hasListeners("newMessage"))
+            mSocket.on("newMessage",newMessageChat);
         mSocket.on("messageListReceive", messageListReceiveChat);
         mSocket.on("error-pipe", error_pipeChat);
         Log.d("", "initSocket: " + data.toString());
@@ -258,10 +261,11 @@ public class ChatActivity extends MvpAppCompatActivity
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                Log.d("ChatActivity", "sending string..." + message.toString());
-                mSocket.emit("message", message);
-                recyclerView.scrollToPosition(adapter.getItemCount() - 1);
-                lastVisibleItem = adapter.getItemCount() - 1;
+                imagesToSend.add(message);
+//                Log.d("ChatActivity", "sending string..." + message.toString());
+//                mSocket.emit("message", message);
+//                recyclerView.scrollToPosition(adapter.getItemCount() - 1);
+//                lastVisibleItem = adapter.getItemCount() - 1;
             }
     }
 
@@ -312,6 +316,7 @@ public class ChatActivity extends MvpAppCompatActivity
         BaseMessage baseMessage = new BaseMessage();
         baseMessage.messageType = BaseMessage.MESSAGE_TYPE_SENDER_VIDEO;
         baseMessage.setUri(Uri.parse(path));
+        baseMessage.setResourceLocalPreview(R.drawable.bg_black_rect);
         adapter.addMessage(baseMessage);
     }
 
@@ -429,6 +434,7 @@ public class ChatActivity extends MvpAppCompatActivity
     private Emitter.Listener newMessageChat = args -> ChatActivity.this.runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
         Log.d("ChatActivity", "newMessage: " + data.toString());
+        Log.d("ChatActivity", "IsInBackground = " + isInBackGround);
         try{
             if (isInBackGround){
                 if (data.getString("chatId").equals(chatID)){
@@ -446,8 +452,8 @@ public class ChatActivity extends MvpAppCompatActivity
                             baseMessage.setTime(data.getJSONObject("message").getLong("date"));
                             break;
                         case "video":
-                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
-                            baseMessage.setMessage(Constants.BASEURL_VIDEO_TEMP + data.getJSONObject("message").getString("message"));
+                            baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO;
+                            baseMessage.setUri(Uri.parse(Constants.BASEURL_VIDEO_TEMP + data.getJSONObject("message").getString("message")));
                             baseMessage.setTime(data.getJSONObject("message").getLong("date"));
                             break;
                     }
@@ -479,8 +485,8 @@ public class ChatActivity extends MvpAppCompatActivity
                     baseMessage.setUri(Uri.parse(Constants.BASE_URL_IMAGE + data.getJSONObject("message").getString("message")));
                     break;
                 case "video":
-                    baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECIVER;
-                    baseMessage.setMessage(Constants.BASEURL_VIDEO_TEMP + data.getJSONObject("message").getString("message"));
+                    baseMessage.messageType = BaseMessage.MESSAGE_TYPE_RECEIVER_VIDEO;
+                    baseMessage.setUri(Uri.parse(Constants.BASEURL_VIDEO_TEMP + data.getJSONObject("message").getString("message")));
                     break;
             }
             String author = data.getJSONObject("message").getString("author");
@@ -498,6 +504,12 @@ public class ChatActivity extends MvpAppCompatActivity
     private Emitter.Listener enteredDialogChat = args -> ChatActivity.this.runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
         Log.d("ChatActivity","enteredDialog "+ data.toString());
+
+        for (JSONObject i:imagesToSend)
+            mSocket.emit("message", i);
+        imagesToSend.clear();
+
+
         if (isFirstInited)
             return;
         try{
@@ -568,7 +580,8 @@ public class ChatActivity extends MvpAppCompatActivity
                     String id  = participant.getString("id");
                     if (id.equals(patientID)){
                         JSONObject emitObj = new JSONObject();
-                        emitObj.put("dialogId",data.getJSONArray("dialogs").getJSONObject(i).getString("id"));
+                        emitObj.put("dialogId", data.getJSONArray("dialogs").getJSONObject(i).getString("id"));
+                        chatID = data.getJSONArray("dialogs").getJSONObject(i).getString("id");
                         mSocket.emit("enterInDialog", emitObj);
                         Log.d("", emitObj.toString());
                         break;
@@ -582,7 +595,7 @@ public class ChatActivity extends MvpAppCompatActivity
     });
 
     private Emitter.Listener onConnectedChat = args -> ChatActivity.this.runOnUiThread(() -> {
-        
+
     });
 
     private Emitter.Listener onConnectedErrorChat = args -> ChatActivity.this.runOnUiThread(() -> {

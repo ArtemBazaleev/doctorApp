@@ -49,7 +49,7 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
                         getViewState().hideProgress();
                         if (responseBodyResponse.isSuccessful()){
                             List<PatientModel> patients = new ArrayList<>();
-                            patientList = responseBodyResponse.body().getData().getPatients();
+                            patientList = Objects.requireNonNull(responseBodyResponse.body()).getData().getPatients();
                             if (patientList!=null)
                                 for (Patient i: patientList) {
                                     PatientModel patientModel = new PatientModel();
@@ -70,7 +70,7 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
                             }
                         }else{
                             getViewState().hideProgress();
-                            Log.d("onViewCreated: ", responseBodyResponse.errorBody().string());
+                            Log.d("onViewCreated: ", Objects.requireNonNull(responseBodyResponse.errorBody()).string());
                         }
                 },throwable -> {
                     throwable.printStackTrace();
@@ -87,9 +87,7 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
 
     public void onMessageReceived(JSONObject data) {
         Log.d(TAG, "newMessage: " + data.toString());
-
         try {
-//            getViewState().showNotif("Пациент", "Сообщение:", data.getJSONObject("message").getString("message"));
             getViewState().increaseCounterForPatient(data.getString("chatId"));
         } catch (JSONException e) {
             e.printStackTrace();
@@ -119,5 +117,9 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
         }catch (Exception e){
             e.printStackTrace();
         }
+    }
+
+    public void updateUnreadMessages(String dialogID, int i) {
+        getViewState().setUnreadMessages(dialogID, i);
     }
 }
