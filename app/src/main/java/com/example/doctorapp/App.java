@@ -24,6 +24,7 @@ public class App extends Application {
     public String patienID;
     private String mToken = "";
     private String mUserID = "";
+    private String dialogID = "";
     private Socket mSocket;
     private boolean inited = false;
     private Vibrator vibrator;
@@ -31,7 +32,7 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        //initSocket();
+        initSocket();
         vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
 
     }
@@ -49,6 +50,13 @@ public class App extends Application {
             inited = true;
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void forceInit(){
+        if (!mSocket.connected()){
+            inited = false;
+            initSocket();
         }
     }
 
@@ -83,5 +91,13 @@ public class App extends Application {
             vibrator.vibrate(200);
 
         }
+    }
+
+    public String getDialogID() {
+        return dialogID;
+    }
+
+    public void setDialogID(String dialogID) {
+        this.dialogID = dialogID;
     }
 }

@@ -70,6 +70,7 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
                             }
                         }else{
                             getViewState().hideProgress();
+                            getViewState().startLoginActivityAndClearStack();
                             Log.d("onViewCreated: ", Objects.requireNonNull(responseBodyResponse.errorBody()).string());
                         }
                 },throwable -> {
@@ -82,7 +83,8 @@ public class ChatMemberFragmentPresenter extends MvpPresenter<ChatMembersFragmen
 
     public void onPatientClicked(PatientModel model) {
         getViewState().setUnreadMessages(model.getDialogID(), 0);
-        getViewState().startChatActivity(model.getPatientID(), model.getName() + " " + model.getSecondName());
+        //getViewState().startChatActivity(model.getPatientID(), model.getName() + " " + model.getSecondName());
+        getViewState().startChatActivity(model);
     }
 
     public void onMessageReceived(JSONObject data) {

@@ -19,7 +19,6 @@ import com.example.doctorapp.presentation.presenter.MainActivityPresenter;
 import com.example.doctorapp.presentation.view.IMainActivityView;
 
 
-// TODO: 5/30/2019 add fragments
 public class MainActivity extends MvpAppCompatActivity implements IMainActivityView {
     public static final int RESULT_CHAT = 6458;
     private Fragment profileFragment;
@@ -127,7 +126,13 @@ public class MainActivity extends MvpAppCompatActivity implements IMainActivityV
     protected void onDestroy(){
         super.onDestroy();
         Log.d("MAIN ACTIVITY", "onDestroy: called! ------------------------------------");
-        App app = (App) getApplication();
-        app.disconnect();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        App app = (App)getApplication();
+        if (app.getmUserID().equals("") || app.getmToken().equals(""))
+            finish();
     }
 }
