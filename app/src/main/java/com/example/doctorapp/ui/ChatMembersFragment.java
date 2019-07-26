@@ -29,21 +29,27 @@ import com.arellomobile.mvp.MvpAppCompatFragment;
 import com.arellomobile.mvp.presenter.InjectPresenter;
 import com.arellomobile.mvp.presenter.ProvidePresenter;
 import com.example.doctorapp.App;
+import com.example.doctorapp.Constants;
 import com.example.doctorapp.R;
 import com.example.doctorapp.adapters.PatientAdapter;
 import com.example.doctorapp.model.PatientModel;
 import com.example.doctorapp.presentation.presenter.ChatMemberFragmentPresenter;
 import com.example.doctorapp.presentation.view.ChatMembersFragmentView;
 import com.github.nkzawa.emitter.Emitter;
+import com.github.nkzawa.socketio.client.Ack;
+import com.github.nkzawa.socketio.client.IO;
 import com.github.nkzawa.socketio.client.Socket;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -67,7 +73,9 @@ public class ChatMembersFragment extends MvpAppCompatFragment
     private App app;
     private int notificationId = 0;
     private boolean isInBackground = false;
+    private boolean inited = false;
     private boolean isFirsInited = true;
+    private Timer timer = new Timer();
 
     @ProvidePresenter
     ChatMemberFragmentPresenter providePresenter(){
@@ -138,6 +146,7 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         mSocket.off("authOk");
         mSocket.off("newMessage",newMessage);
         mSocket.off("error-pipe",error_pipe);
+        mSocket.off("dialogList",dialogList);
         Log.d(TAG, "offSocket: called");
     }
 
@@ -148,6 +157,8 @@ public class ChatMembersFragment extends MvpAppCompatFragment
             mSocket.on("newMessage",newMessage);
         if (!mSocket.hasListeners("error-pipe"))
             mSocket.on("error-pipe",error_pipe);
+        if (!mSocket.hasListeners("getDialogs"))
+            mSocket.on("dialogList", dialogList);
     }
 
     @Override
@@ -259,7 +270,8 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         try {
             JSONObject data = (JSONObject) args[0];
             Log.d(TAG, "AuthOk: " + data.toString());
-
+            inited = true;
+            timer.cancel();
             if (!data.getJSONArray("dialogs").getJSONObject(0).has("id")) { // NO CHAT
                 hasChatDialog = false;
                 return;
@@ -300,7 +312,9 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         isInBackground = true;
         Log.d(TAG, "onPause: _______________________________________________________________");
         offSocket();
-//        mSocket.disconnect();
+        mSocket.disconnect();
+        timer.cancel();
+        inited = false;
         Log.d(TAG, "onPause: soket:" + mSocket.connected());
     }
     @Override
@@ -314,12 +328,9 @@ public class ChatMembersFragment extends MvpAppCompatFragment
     }
 
     private void initSocket() {
-        app.initSocket();
-        mSocket = app.getmSocket();
-        //mSocket.on(Socket.EVENT_CONNECT_ERROR, onConnectedError);
+        initializeSocket();
         mSocket.on(Socket.EVENT_CONNECT, onConnected);
         mSocket.on(Socket.EVENT_DISCONNECT, ondisconnect);
-        offSocket();
         onSocket();
         if (mSocket.connected()) {
             Log.d(TAG, "SocketConnected !!!!++++++++++++++++++++++++++++++++++++++++++++++++");
@@ -337,18 +348,7 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         }
         else{
             Log.d(TAG, "SocketConnected !!!!------------------------------------------------");
-            app.forceInit();
             mSocket.connect();
-            JSONObject data = new JSONObject();
-            try {
-                data.put("userId", app.getmUserID());
-                data.put("token", app.getmToken());
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-
-            Log.d("Emitting...", "initSocket: " + data.toString());
-            mSocket.emit("auth", data);
         }
         //Log.d(TAG, "initSocket soket: " + mSocket.connected());
     }
@@ -382,12 +382,81 @@ public class ChatMembersFragment extends MvpAppCompatFragment
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        Log.d(TAG, "onConnected: authOk = " + mSocket.hasListeners("authOk"));
+        if (!mSocket.hasListeners("authOk"))
+            mSocket.on("authOk", authOk);
 
-        Log.d("Emitting...", "initSocket: " + data.toString());
-        mSocket.emit("auth", data);
+        Thread t = new Thread(){
+            public void run() {
+                Log.d("Emitting...", "initSocket: " + data.toString());
+                mSocket.emit("auth", data, (Ack) args1 -> Log.e(TAG, "++++++++++++++++++++++++ACK"));
+            }
+        };
+        t.start();
+
+        if (!inited)
+            requestDialogs();
     });
 
     private Emitter.Listener ondisconnect = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
         Log.d(TAG, "ondisconnect: called");
     });
+
+
+    private Emitter.Listener dialogList = args -> Objects.requireNonNull(getActivity()).runOnUiThread(()->{
+        JSONObject data = (JSONObject) args[0];
+        Log.d(TAG, "DialogListReceived: " + data.toString());
+        inited = true;
+        try {
+            Log.d(TAG, "DialogListReceived: " + data.toString());
+
+            if (!data.getJSONArray("dialogs").getJSONObject(0).has("id")) { // NO CHAT
+                hasChatDialog = false;
+                return;
+            }
+            for (int i = 0; i < data.getJSONArray("dialogs").length(); i++){
+                String dialogID = data.getJSONArray("dialogs").getJSONObject(i).getString("id");
+                if (data.getJSONArray("dialogs").getJSONObject(i).has("unreadMessages")){
+                    int unreadMessages = data.getJSONArray("dialogs").getJSONObject(i).getInt("unreadMessages");
+                    presenter.updateUnreadMessages(dialogID,unreadMessages);
+                }
+                else {
+                    presenter.updateUnreadMessages(dialogID, 0);
+                }
+            }
+            hasChatDialog = true;
+            Log.d("", data.toString());
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+    });
+
+    private void initializeSocket(){
+        try {
+            IO.Options mOptions = new IO.Options();
+            mOptions.path = "/socstream/";
+            mOptions.secure = false;
+            mOptions.forceNew = true; //added
+            mOptions.reconnection = true;
+            Log.d("test", "initSocket: " + mOptions.toString());
+            mSocket = IO.socket(Constants.BASE_SOCKET_URL, mOptions);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void  requestDialogs() {
+        timer = new Timer();
+        TimerTask hourlyTask = new TimerTask () {
+            @Override
+            public void run () {
+                if (inited)
+                    timer.cancel();
+                Log.d(TAG, "requesting dialogs................................................: ");
+                mSocket.emit("getDialogs");
+            }
+        };
+        timer.schedule (hourlyTask, 0L, 1000);
+
+    }
 }

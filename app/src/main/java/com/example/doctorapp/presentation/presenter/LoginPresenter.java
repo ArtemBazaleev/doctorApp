@@ -43,6 +43,18 @@ public class LoginPresenter extends MvpPresenter<ILoginView> {
         if (login.equals("") || password.equals("")) {
             getViewState().showToastyMessage("Заполните все поля");
         }
+
+        if (login.length() < 3) {
+            getViewState().showToastyMessage("Проверьте логин");
+            return;
+        }
+        if (isNumeric(login)){
+            if (login.charAt(0) != '+')
+                login = "+" + login;
+            if (login.charAt(1) == '8')
+                login = "+7" + login.substring(2);
+        }
+
         getViewState().setEnabledSubmitBtn(false);
         getViewState().showLoadingIndicator();
         Disposable d = signInHelper.signIn(login,password)
@@ -80,5 +92,15 @@ public class LoginPresenter extends MvpPresenter<ILoginView> {
                 e.printStackTrace();
             }
         }
+    }
+
+    private static boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
+
     }
 }

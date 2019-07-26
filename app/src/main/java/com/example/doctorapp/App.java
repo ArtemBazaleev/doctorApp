@@ -32,7 +32,7 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        initSocket();
+        //initSocket();
         vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
 
     }
