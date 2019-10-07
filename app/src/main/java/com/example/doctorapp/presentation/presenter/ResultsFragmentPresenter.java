@@ -36,6 +36,7 @@ public class ResultsFragmentPresenter extends MvpPresenter<IResultsFragmentView>
     private String token;
     private String patientID;
     private DataHelper dataHelper;
+    private ResultModel conclusionToEdit = null;
     //private List<ResultModel> data;
     private DateFormat formatter = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
@@ -71,7 +72,8 @@ public class ResultsFragmentPresenter extends MvpPresenter<IResultsFragmentView>
                                 data.add(new ResultModel("",
                                         infos.getJSONObject(i).getString("conclusion"),
                                         "Заключение",
-                                        ResultModel.TYPE_CONCLUSION));
+                                        ResultModel.TYPE_CONCLUSION,
+                                        infos.getJSONObject(i).getString("id")));
                                 JSONArray arrJson = infos.getJSONObject(i).getJSONArray("backbone");
                                 String[] arr = new String[arrJson.length()];
                                 for(int j = 0; j < arrJson.length(); j++)
@@ -125,4 +127,42 @@ public class ResultsFragmentPresenter extends MvpPresenter<IResultsFragmentView>
     public void onRefresh() {
         provideData();
     }
+
+    public void onEditConclusionClicked(ResultModel model) {
+        conclusionToEdit = model;
+        Log.d("Presenter", "onEditConclusionClicked: " + model.getInfoID());
+        getViewState().showEditConclusionDialog(conclusionToEdit.getDesc());
+    }
+
+    public void onEditConclusion(String conclusion){
+        Log.d("Presenter", "onEditConclusion: " + conclusion);
+        Disposable d = dataHelper.changeConclusion(
+                token,
+                userID,
+                patientID,
+                conclusionToEdit.getInfoID(),
+                conclusion
+        )
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(responseBodyResponse -> {
+                    if (responseBodyResponse.isSuccessful()){
+                        getViewState().dismissDialog();
+                        getViewState().showTastyMessage("Заключение сохранено");
+                    }
+                    else {
+                        getViewState().showTastyMessage(
+                                responseBodyResponse.errorBody() != null ? responseBodyResponse.errorBody().string() : "error, try later");
+                    }
+                }, throwable -> {
+
+                });
+    }
+
+    public void onCancelConclusion(){
+        Log.d("Presenter", "onCancelConclusion: called");
+        conclusionToEdit = null;
+        getViewState().dismissDialog();
+    }
+
 }

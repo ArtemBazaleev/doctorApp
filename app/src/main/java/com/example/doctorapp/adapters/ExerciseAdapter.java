@@ -113,8 +113,11 @@ public class ExerciseAdapter extends RecyclerView.Adapter<ExerciseAdapter.Exerci
                 textView.setVisibility(View.GONE);
                 category.setText(model.getCategory());
                 category.setVisibility(View.VISIBLE);
-
                 return;
+            }else{
+                cardView.setVisibility(View.VISIBLE);
+                textView.setVisibility(View.VISIBLE);
+                category.setVisibility(View.GONE);
             }
 
             Picasso.with(mContext)

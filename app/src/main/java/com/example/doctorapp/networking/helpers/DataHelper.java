@@ -3,6 +3,7 @@ package com.example.doctorapp.networking.helpers;
 import com.example.doctorapp.Constants;
 import com.example.doctorapp.model.ProfileModel;
 import com.example.doctorapp.networking.ApiData;
+import com.example.doctorapp.networking.data.ChangeConclusionBody;
 import com.example.doctorapp.networking.data.Profile;
 import com.example.doctorapp.networking.data.ProfileDoctorBody;
 import com.example.doctorapp.networking.responses.exercise.ResponseExercise;
@@ -45,14 +46,14 @@ public class DataHelper {
         Retrofit retrofit = provideRetrofit();
         String idAndToken = "token=" + token + "; " + "id=" + userID;
         ApiData apiData = retrofit.create(ApiData.class);
-        return apiData.getExercise(idAndToken);
+        return apiData.getExercise(idAndToken, 0 ,300);
     }
 
     public Observable<Response<ResponseExercise>> getSuggestetExercisesForPatient(String token, String userID, String patientID){
         Retrofit retrofit = provideRetrofit();
         String idAndToken = "token=" + token + "; " + "id=" + userID;
         ApiData apiData = retrofit.create(ApiData.class);
-        return apiData.getSuggestedExercises(idAndToken, patientID);
+        return apiData.getSuggestedExercises(idAndToken, patientID,0,300);
     }
 
     public Observable<Response<ResponseBody>> addExerciceToPatient(String token, String id, String exercise, String patientID){
@@ -86,6 +87,17 @@ public class DataHelper {
                 profileModel.getPosition()
         ));
         return apiData.setProfile(idAndToken, id, body);
+    }
+
+    public Observable<Response<ResponseBody>> changeConclusion(String token,
+                                                               String id,
+                                                               String patientID,
+                                                               String infoID,
+                                                               String newConclusion){
+        Retrofit retrofit = provideRetrofit();
+        String idAndToken =  "token=" + token + "; " + "id=" + id;
+        ApiData apiData = retrofit.create(ApiData.class);
+        return apiData.changeConclusion(idAndToken, patientID, infoID, new ChangeConclusionBody(newConclusion));
     }
 
 }

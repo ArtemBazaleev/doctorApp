@@ -48,6 +48,7 @@ public class LoginActivity extends MvpAppCompatActivity implements ILoginView {
         setContentView(R.layout.activity_login);
         ButterKnife.bind(this);
         init();
+        presenter.onCreate();
 
     }
 
@@ -117,6 +118,12 @@ public class LoginActivity extends MvpAppCompatActivity implements ILoginView {
     public void hideLoadingIndicator() {
         progressBar.setVisibility(View.GONE);
         enter.setImageResource(R.drawable.ic_arrow_forward_black_24dp);
+    }
+
+    @Override
+    public void setLogPass(String log, String pass) {
+        login.setText(log);
+        password.setText(pass);
     }
 
 }

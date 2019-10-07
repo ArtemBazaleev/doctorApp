@@ -21,4 +21,7 @@ public interface IResultsFragmentView extends MvpView {
 
     void hideErrorNoResults();
 
+    void showEditConclusionDialog(String text);
+
+    void dismissDialog();
 }

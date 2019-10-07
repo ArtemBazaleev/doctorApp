@@ -1,5 +1,6 @@
 package com.example.doctorapp.networking;
 
+import com.example.doctorapp.networking.data.ChangeConclusionBody;
 import com.example.doctorapp.networking.data.ProfileDoctorBody;
 import com.example.doctorapp.networking.responses.exercise.ResponseExercise;
 import com.example.doctorapp.networking.responses.patients.ResponsePatients;
@@ -56,11 +57,17 @@ public interface ApiData {
     @GET("patient/{patientID}/exercise")
     Observable<Response<ResponseExercise>> getSuggestedExercises(
             @Header("Cookie") String tokenAndId,
-            @Path("patientID") String patientID
+            @Path("patientID") String patientID,
+            @Query("skip") int skip,
+            @Query("limit") int limit
     );
 
     @GET("exercise")
-    Observable<Response<ResponseExercise>> getExercise(@Header("Cookie") String tokenAndId);
+    Observable<Response<ResponseExercise>> getExercise(
+            @Header("Cookie") String tokenAndId,
+            @Query("skip") int skip,
+            @Query("limit") int limit
+    );
 
     @GET("patient/{patientID}/diagnosticInfo")
     Observable<Response<ResponseBody>> getDiagnostics(
@@ -68,5 +75,11 @@ public interface ApiData {
             @Path("patientID") String userID
     );
 
-
+    @POST("patient/{patientID}/diagnosticInfo/{infoID}/changeConclusion")
+    Observable<Response<ResponseBody>> changeConclusion(
+            @Header("Cookie") String tokenAndId,
+            @Path("patientID") String patientID,
+            @Path("infoID") String infoID,
+            @Body ChangeConclusionBody body
+            );
 }

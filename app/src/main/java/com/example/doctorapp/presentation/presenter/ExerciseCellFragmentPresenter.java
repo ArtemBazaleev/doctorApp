@@ -170,7 +170,7 @@ public class ExerciseCellFragmentPresenter extends MvpPresenter<IExerciseCellFra
 
     public void onConfirmedAction() {
         if (mode == ExerciseCellFragment.MODE_SUGGESTED) {
-            getViewState().showToastyMessage("onDelClimcked");
+            getViewState().showToastyMessage("Упражнение удалено");
             d.add(
                     apiHelper.removeExerciceFromPatient(mToken, mID, model.getId(), patientID)
                             .subscribeOn(Schedulers.io())
@@ -187,7 +187,7 @@ public class ExerciseCellFragmentPresenter extends MvpPresenter<IExerciseCellFra
             );
         }
         else {
-            getViewState().showToastyMessage("onAddClicked");
+            getViewState().showToastyMessage("Упражнение добавлено");
             d.add(
                     apiHelper.addExerciceToPatient(mToken, mID, model.getId(), patientID)
                             .subscribeOn(Schedulers.io())

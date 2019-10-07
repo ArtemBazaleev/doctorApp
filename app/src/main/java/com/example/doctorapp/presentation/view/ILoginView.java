@@ -8,4 +8,5 @@ public interface ILoginView extends MvpView {
     void setEnabledSubmitBtn(Boolean enabled);
     void showLoadingIndicator();
     void hideLoadingIndicator();
+    void setLogPass(String log, String pass);
 }

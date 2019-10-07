@@ -366,6 +366,18 @@ public class ChatMembersFragment extends MvpAppCompatFragment
     private Emitter.Listener error_pipe  = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
         Log.d("error_pipe", data.toString());
+        try{
+            if (data.has("code")){
+                Toast.makeText(ChatMembersFragment.this.getContext(), data.getString("message"),Toast.LENGTH_SHORT).show();
+                if ("403".equals(data.getString("code"))) {
+                    timer.cancel();
+                    inited = false;
+                    ChatMembersFragment.this.getActivity().finish();
+                }
+            }
+        }catch (JSONException e){
+            e.printStackTrace();
+        }
     });
 
     private Emitter.Listener onConnectedError = args -> Objects.requireNonNull(getActivity()).runOnUiThread(() -> {

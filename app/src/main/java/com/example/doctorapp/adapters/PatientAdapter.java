@@ -78,7 +78,7 @@ public class PatientAdapter extends RecyclerView.Adapter<PatientAdapter.PatientH
             super(itemView);
             card = itemView.findViewById(R.id.patient_chat_card);
             card.setOnClickListener(this);
-            card.setOnLongClickListener(this);
+            //card.setOnLongClickListener(this);
             nameSurname = itemView.findViewById(R.id.textView);
             conclusion = itemView.findViewById(R.id.textView2);
             unreadMessages= itemView.findViewById(R.id.textView7);

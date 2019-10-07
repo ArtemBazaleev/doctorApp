@@ -21,7 +21,8 @@ public class SecuredSharedPreferences {
 
     private static final String TOKEN = "SECURED_TOKEN";
     private static final String ID = "SECURED_ID";
-
+    public static final String LOGIN = "SECURED_LOG";
+    public static final String PASS = "SECURED_PASS";
     public SecuredSharedPreferences(Context context) {
         //not mandatory, can be null too
         String storeFileName = "securedStore";
@@ -73,5 +74,22 @@ public class SecuredSharedPreferences {
 
     public String getUserID(){
         return securedSharedPreferences.getString(ID,"");
+    }
+
+    public void setLogin(String login){
+        securedSharedPreferences.edit()
+                .putString(LOGIN, login)
+                .apply();
+    }
+    public String getLogin(){
+        return securedSharedPreferences.getString(LOGIN, "");
+    }
+    public void setPassword(String password){
+        securedSharedPreferences.edit()
+                .putString(PASS, password)
+                .apply();
+    }
+    public String getPassword(){
+        return securedSharedPreferences.getString(PASS, "");
     }
 }

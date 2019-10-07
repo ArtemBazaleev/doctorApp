@@ -7,6 +7,7 @@ public class ResultModel {
     public static final int TYPE_CONCLUSION = 2;
     public static final int TYPE_OTHER = 1;
 
+    private String infoID;
     private String url;
     private String desc;
     private String created;
@@ -59,6 +60,14 @@ public class ResultModel {
         this.type = type;
     }
 
+    public ResultModel(String url, String desc, String created, int type, String infoID) {
+        this.url = url;
+        this.desc = desc;
+        this.created = created;
+        this.type = type;
+        this.infoID = infoID;
+    }
+
     public String getUrl() {
         return url;
     }
@@ -67,4 +76,11 @@ public class ResultModel {
         this.url = url;
     }
 
+    public String getInfoID() {
+        return infoID;
+    }
+
+    public void setInfoID(String infoID) {
+        this.infoID = infoID;
+    }
 }

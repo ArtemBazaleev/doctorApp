@@ -1,17 +1,25 @@
 package com.example.doctorapp.ui;
 
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.arellomobile.mvp.MvpAppCompatFragment;
@@ -48,6 +56,7 @@ public class ResultsFragment extends MvpAppCompatFragment
 
     @InjectPresenter
     ResultsFragmentPresenter presenter;
+    private AlertDialog dialog;
 
     @ProvidePresenter
     ResultsFragmentPresenter providePresenter(){
@@ -74,6 +83,10 @@ public class ResultsFragment extends MvpAppCompatFragment
         presenter.onResultClicked(model);
     }
 
+    @Override
+    public void onEditConclusion(ResultModel model) {
+        presenter.onEditConclusionClicked(model);
+    }
 
     public static ResultsFragment newInstance(String userID){
         ResultsFragment fragment = new ResultsFragment();
@@ -139,5 +152,40 @@ public class ResultsFragment extends MvpAppCompatFragment
     public void hideErrorNoResults() {
         emptyContent.setVisibility(View.GONE);
     }
+
+    @Override
+    public void showEditConclusionDialog(String text) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        View v = getLayoutInflater().inflate(R.layout.dialog_edit_conclusion,null);
+        Button dialogOkbtn = v.findViewById(R.id.button);
+        TextView cancelBtn = v.findViewById(R.id.button2);
+        EditText editDialog = v.findViewById(R.id.editText2);
+        editDialog.setText(text);
+        cancelBtn.setOnClickListener(l->presenter.onCancelConclusion());
+        dialogOkbtn.setOnClickListener(l-> presenter.onEditConclusion(editDialog.getText().toString()));
+        builder.setView(v);
+        dialog = builder
+                .setCancelable(false)
+                .create();
+        Objects.requireNonNull(dialog.getWindow()).setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        dialog.show();
+    }
+
+    @Override
+    public void dismissDialog() {
+        if (dialog!=null) {
+            dialog.hide();
+            dialog.dismiss();
+        }
+
+    }
     //MVP
+
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (dialog!=null)
+            dialog.dismiss();
+    }
 }

@@ -7,6 +7,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.doctorapp.R;
@@ -51,7 +52,7 @@ public class ResultsAdapter extends RecyclerView.Adapter<ResultsAdapter.ResultHo
         private ConstraintLayout constraintLayout;
         private ResultModel model;
         private TextView date;
-
+        private ImageView editBtn;
         private TextView desc;
         private TextView conclusion;
 
@@ -60,6 +61,8 @@ public class ResultsAdapter extends RecyclerView.Adapter<ResultsAdapter.ResultHo
             constraintLayout = itemView.findViewById(R.id.constraintLayout5);
             date = itemView.findViewById(R.id.textView8);
             desc = itemView.findViewById(R.id.textView9);
+            editBtn  = itemView.findViewById(R.id.imageView3);
+            editBtn.setOnClickListener(l-> mListener.onEditConclusion(model));
             conclusion = itemView.findViewById(R.id.text_conclusion);
             constraintLayout.setOnClickListener(this);
         }
@@ -77,12 +80,14 @@ public class ResultsAdapter extends RecyclerView.Adapter<ResultsAdapter.ResultHo
                 date.setText(model.getCreated());
                 conclusion.setText(model.getDesc());
                 conclusion.setVisibility(View.VISIBLE);
+                editBtn.setVisibility(View.VISIBLE);
             }
             else {
                 desc.setText(model.getDesc());
                 date.setText(model.getCreated());
                 conclusion.setVisibility(View.GONE);
                 constraintLayout.setVisibility(View.VISIBLE);
+                editBtn.setVisibility(View.GONE);
             }
 
         }
@@ -90,5 +95,8 @@ public class ResultsAdapter extends RecyclerView.Adapter<ResultsAdapter.ResultHo
 
     public interface IOnResultClicked{
         void onResult(ResultModel model);
+        default void onEditConclusion(ResultModel model){
+
+        }
     }
 }

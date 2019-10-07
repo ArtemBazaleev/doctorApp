@@ -21,8 +21,8 @@ import retrofit2.Response;
 @InjectViewState
 public class LoginPresenter extends MvpPresenter<ILoginView> {
 
-    private String login = "therapist@gmail.com";
-    private String password = "12345";
+    private String login = "";// therapist@gmail.com
+    private String password = "";//12345
     private SignInHelper signInHelper = new SignInHelper();
     private CompositeDisposable disposables = new CompositeDisposable();
     private SecuredSharedPreferences preferences;
@@ -79,6 +79,8 @@ public class LoginPresenter extends MvpPresenter<ILoginView> {
             }
             preferences.setToken(Objects.requireNonNull(response.body()).getData().getToken());
             preferences.setUserID(Objects.requireNonNull(response.body().getData().getId()));
+            preferences.setLogin(login);
+            preferences.setPassword(password);
             getViewState().startMainActivity(
                     Objects.requireNonNull(response.body()).getData().getToken(),
                     Objects.requireNonNull(response.body()).getData().getId()
@@ -102,5 +104,10 @@ public class LoginPresenter extends MvpPresenter<ILoginView> {
             return false;
         }
 
+    }
+
+    public void onCreate() {
+        if(!preferences.getLogin().equals("") && !preferences.getPassword().equals(""))
+            getViewState().setLogPass(preferences.getLogin(), preferences.getPassword());
     }
 }

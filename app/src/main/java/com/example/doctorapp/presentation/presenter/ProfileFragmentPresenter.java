@@ -42,10 +42,10 @@ public class ProfileFragmentPresenter extends MvpPresenter<ProfileFragmentView> 
     }
 
     public void onSaveBtnClicked(){
-        if (name.equals("") || surname.equals("") || position.equals("")){
-            getViewState().showToastyMessage("Заполните все поля");
-            return;
-        }
+//        if (name.equals("") || surname.equals("") || position.equals("")){
+//            getViewState().showToastyMessage("Заполните все поля");
+//            return;
+//        }
         setProfile();
     }
 

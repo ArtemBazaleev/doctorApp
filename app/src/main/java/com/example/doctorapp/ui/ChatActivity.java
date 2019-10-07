@@ -468,6 +468,18 @@ public class ChatActivity extends MvpAppCompatActivity
     private Emitter.Listener error_pipeChat  = args -> ChatActivity.this.runOnUiThread(() -> {
         JSONObject data = (JSONObject) args[0];
         Log.d("error_pipe", data.toString());
+        try{
+            if (data.has("code")){
+                if ("403".equals(data.getString("code"))) {
+                    timer.cancel();
+                    inited = false;
+                    finish();
+                    Toast.makeText(ChatActivity.this, data.getString("message"),Toast.LENGTH_SHORT).show();
+                }
+            }
+        }catch (JSONException e){
+            e.printStackTrace();
+        }
     });
 
     private Emitter.Listener messageListReceiveChat = args -> ChatActivity.this.runOnUiThread(() -> {
